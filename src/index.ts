@@ -14,6 +14,9 @@ const s3 = new S3Client({
   },
 });
 app.get("/", (c) => {
+  console.log(c.req.raw.url);
+  const project = c.req.raw.url.split("/")[1];
+  console.log(project);
   return c.json({
     status: 200,
     data: c.req.header,
