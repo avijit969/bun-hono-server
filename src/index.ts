@@ -10,4 +10,12 @@ app.get("/", (c) => {
   });
 });
 
+app.get("/resolve", async (c) => {
+  const project = c.req.query("project");
+  const commit = c.req.query("commit");
+  return c.json({
+    project,
+    commit,
+  });
+});
 export default app;
