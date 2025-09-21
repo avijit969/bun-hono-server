@@ -81,4 +81,7 @@ app.get("/*", async (c) => {
   }
 });
 
-export default app;
+export default {
+  port: 80,
+  fetch: app.fetch,
+};
