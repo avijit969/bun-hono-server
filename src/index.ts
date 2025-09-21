@@ -13,26 +13,16 @@ const s3 = new S3Client({
       "993ef055b6f6ec5da099419e9b4dbd51cb0704b81cd0523b254c0f1eadb767db",
   },
 });
-app.get("/", (c) => {
-  console.log(c.req.raw.url);
-  const project = c.req.raw.url.split("/")[1];
-  console.log(project);
-  return c.json({
-    status: 200,
-    data: c.req.header,
-    message: "Hello From Bun Hono server",
-  });
-});
-app.get("/resolve/*", async (c) => {
-  const project = c.req.query("project");
 
-  // Strip /resolve prefix and leading slashes
-  let reqPath = c.req.path.replace("/resolve", "").replace(/^\/+/, "");
+app.get("/*", async (c) => {
+  // full path after '/'
+  const reqPath = c.req.param("*") || "index.html"; // default to index.html
 
-  // Default to index.html if path is empty (SPA fallback)
-  if (!reqPath) reqPath = "index.html";
+  // extract project from host subdomain
+  const host = c.req.header("host") || "";
+  const project = host.split(".")[0]; // "avijit" from "avijit.signmate.site"
 
-  console.log("Project:", project, "R2 Key:", `${project}/${reqPath}`);
+  console.log("Project:", project, "Path:", reqPath);
 
   try {
     const result = await s3.send(
