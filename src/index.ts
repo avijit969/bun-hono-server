@@ -13,7 +13,13 @@ const s3 = new S3Client({
       "993ef055b6f6ec5da099419e9b4dbd51cb0704b81cd0523b254c0f1eadb767db",
   },
 });
-
+app.get("/", (c) => {
+  return c.json({
+    status: 200,
+    data: c.req.header,
+    message: "Hello From Bun Hono server",
+  });
+});
 app.get("/resolve/*", async (c) => {
   const project = c.req.query("project");
 
