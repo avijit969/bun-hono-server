@@ -24,7 +24,7 @@ app.get("/resolve", async (c) => {
   const project = c.req.query("project");
   const commit = c.req.query("commit");
   const reqPath = c.req.path === "/" ? "/index.html" : c.req.path;
-
+  console.log(project, commit, reqPath);
   try {
     const result = await s3.send(
       new GetObjectCommand({
@@ -39,6 +39,7 @@ app.get("/resolve", async (c) => {
       status: result.$metadata.httpStatusCode,
     });
   } catch (error) {
+    console.log(error);
     return c.json({
       status: 404,
       message: "Not Found",
