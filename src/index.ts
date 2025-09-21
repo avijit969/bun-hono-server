@@ -5,10 +5,15 @@ const app = new Hono();
 const s3 = new S3Client({
   region: "auto",
   forcePathStyle: true,
-  endpoint: process.env.R2_ENDPOINT || "",
+  endpoint:
+    process.env.R2_ENDPOINT ||
+    "https://5d705b266cd8845b315556f319e99893.r2.cloudflarestorage.com",
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
+    accessKeyId:
+      process.env.R2_ACCESS_KEY_ID || "2e3b18725fda11bcd53ea09e80f78819",
+    secretAccessKey:
+      process.env.R2_SECRET_ACCESS_KEY ||
+      "993ef055b6f6ec5da099419e9b4dbd51cb0704b81cd0523b254c0f1eadb767db",
   },
 });
 
@@ -23,12 +28,12 @@ app.get("/", (c) => {
 app.get("/resolve", async (c) => {
   const project = c.req.query("project");
   const commit = c.req.query("commit");
-  const reqPath = c.req.path === "/" ? "/index.html" : c.req.path;
+  const reqPath = c.req.path === "/resolve" ? "/index.html" : c.req.path;
   console.log(project, commit, reqPath);
   try {
     const result = await s3.send(
       new GetObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME,
+        Bucket: process.env.R2_BUCKET_NAME || "dist",
         Key: `${project}/${reqPath}`,
       })
     );
