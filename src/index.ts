@@ -15,13 +15,13 @@ const s3 = new S3Client({
   },
 });
 
-// Utility to get Content-Type from file extension
+// Helper function to determine Content-Type based on file extension
 function getContentType(path: string) {
-  if (path.endsWith(".js")) return "application/javascript";
-  if (path.endsWith(".mjs")) return "application/javascript";
+  if (path.endsWith(".js") || path.endsWith(".mjs"))
+    return "application/javascript";
+  if (path.endsWith(".wasm")) return "application/wasm";
   if (path.endsWith(".css")) return "text/css";
   if (path.endsWith(".json")) return "application/json";
-  if (path.endsWith(".wasm")) return "application/wasm";
   if (path.endsWith(".html")) return "text/html";
   if (path.endsWith(".png")) return "image/png";
   if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
@@ -35,16 +35,18 @@ function getContentType(path: string) {
 
 // Catch-all route
 app.get("/*", async (c) => {
-  const reqPath = c.req.param("*") || "index.html";
-
-  // Get project name from subdomain (avijit.signmate.site → avijit)
-  const host = c.req.header("host") || "";
-  const project = host.split(".")[0];
-
-  console.log("Project:", project, "Requested Path:", reqPath);
-
   try {
-    // Try to fetch requested file from R2
+    // Remove leading slash
+    let reqPath = c.req.param("*") || "index.html";
+    reqPath = reqPath.replace(/^\/+/, "");
+
+    // Extract project name from subdomain
+    const host = c.req.header("host") || "";
+    const project = host.split(".")[0];
+
+    console.log("Project:", project, "Requested Path:", reqPath);
+
+    // Fetch file from R2
     const result = await s3.send(
       new GetObjectCommand({
         Bucket: "dist",
@@ -58,18 +60,23 @@ app.get("/*", async (c) => {
       },
       status: result.$metadata.httpStatusCode,
     });
-  } catch (error: any) {
-    console.warn(`R2 Fetch Error for ${reqPath}:`, error);
+  } catch (err) {
+    console.warn(`R2 fetch error for requested file:`, err);
 
-    // SPA fallback only for non-asset paths
+    // SPA fallback for HTML routes only
+    const reqPath = c.req.param("*") || "index.html";
     if (!reqPath.includes(".") || reqPath.endsWith(".html")) {
       try {
+        const host = c.req.header("host") || "";
+        const project = host.split(".")[0];
+
         const fallback = await s3.send(
           new GetObjectCommand({
             Bucket: "dist",
             Key: `${project}/index.html`,
           })
         );
+
         return new Response(fallback.Body as ReadableStream, {
           headers: { "Content-Type": "text/html" },
           status: 200,
@@ -79,8 +86,8 @@ app.get("/*", async (c) => {
       }
     }
 
-    // Not found
-    return c.json({ status: 404, message: "Not Found" }, 404);
+    // File not found
+    return new Response("Not Found", { status: 404 });
   }
 });
 
