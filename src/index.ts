@@ -24,7 +24,7 @@ app.get("/", (c) => {
 app.get("/resolve", async (c) => {
   const project = c.req.query("project");
   const commit = c.req.query("commit");
-  const reqPath = c.req.path === "/resolve" ? "/index.html" : c.req.path;
+  const reqPath = c.req.path === "/resolve" ? "index.html" : c.req.path;
   console.log(project, commit, reqPath);
   try {
     const result = await s3.send(
