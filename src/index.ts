@@ -29,10 +29,9 @@ function getContentType(path: string) {
   return "text/plain";
 }
 
-// Catch-all route
 app.get("/*", async (c) => {
   const host = c.req.header("host") || "";
-  const project = host.split(".")[0]; // avijit.signmate.site → avijit
+  const project = host.split(".")[0]; // subdomain → project
 
   let reqPath = c.req.param("*") || "index.html";
   reqPath = reqPath.replace(/^\/+/, "");
@@ -40,7 +39,7 @@ app.get("/*", async (c) => {
   console.log("Project:", project, "Requested Path:", reqPath);
 
   try {
-    // Try fetching the requested asset from R2
+    // Fetch asset from R2
     const result = await s3.send(
       new GetObjectCommand({
         Bucket: "dist",
@@ -55,9 +54,9 @@ app.get("/*", async (c) => {
       status: result.$metadata.httpStatusCode,
     });
   } catch (err) {
-    console.warn("Asset not found:", reqPath);
+    console.warn("Asset not found in R2:", reqPath);
 
-    // SPA fallback ONLY for routes without extensions (like /about)
+    // Only fallback to index.html if it's a route (no extension)
     if (!reqPath.includes(".")) {
       try {
         const fallback = await s3.send(
@@ -76,7 +75,7 @@ app.get("/*", async (c) => {
       }
     }
 
-    // If it's a file (like .js, .css) → just return 404
+    // For JS/CSS/images → return 404 (don’t return HTML)
     return new Response("Not Found", { status: 404 });
   }
 });
