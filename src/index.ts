@@ -37,6 +37,7 @@ function getContentType(path: string) {
 app.get("/*", async (c) => {
   try {
     // Remove leading slash
+    console.log(JSON.stringify(c.req, null, 2));
     let reqPath = c.req.param("*") || "index.html";
     reqPath = reqPath.replace(/^\/+/, "");
 
