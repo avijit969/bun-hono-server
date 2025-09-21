@@ -15,39 +15,32 @@ const s3 = new S3Client({
   },
 });
 
-// Helper function: set correct Content-Type
+// Detect content type manually
 function getContentType(path: string) {
   if (path.endsWith(".js") || path.endsWith(".mjs"))
     return "application/javascript";
-  if (path.endsWith(".wasm")) return "application/wasm";
   if (path.endsWith(".css")) return "text/css";
-  if (path.endsWith(".json")) return "application/json";
   if (path.endsWith(".html")) return "text/html";
+  if (path.endsWith(".json")) return "application/json";
   if (path.endsWith(".png")) return "image/png";
   if (path.endsWith(".jpg") || path.endsWith(".jpeg")) return "image/jpeg";
   if (path.endsWith(".svg")) return "image/svg+xml";
-  if (path.endsWith(".ico")) return "image/x-icon";
-  if (path.endsWith(".ttf")) return "font/ttf";
-  if (path.endsWith(".woff")) return "font/woff";
-  if (path.endsWith(".woff2")) return "font/woff2";
+  if (path.endsWith(".wasm")) return "application/wasm";
   return "text/plain";
 }
 
 // Catch-all route
 app.get("/*", async (c) => {
+  const host = c.req.header("host") || "";
+  const project = host.split(".")[0]; // avijit.signmate.site → avijit
+
+  let reqPath = c.req.param("*") || "index.html";
+  reqPath = reqPath.replace(/^\/+/, "");
+
+  console.log("Project:", project, "Requested Path:", reqPath);
+
   try {
-    // Remove leading slash from path
-    console.log(JSON.stringify(c.req.raw.url));
-    let reqPath = c.req.param("*") || "index.html";
-    reqPath = reqPath.replace(/^\/+/, "");
-
-    // Extract project name from subdomain (e.g., avijit.signmate.site → avijit)
-    const host = c.req.header("host") || "";
-    const project = host.split(".")[0];
-
-    console.log("Project:", project, "Requested Path:", reqPath);
-
-    // Fetch requested file from R2
+    // Try fetching the requested asset from R2
     const result = await s3.send(
       new GetObjectCommand({
         Bucket: "dist",
@@ -62,15 +55,11 @@ app.get("/*", async (c) => {
       status: result.$metadata.httpStatusCode,
     });
   } catch (err) {
-    console.warn(`R2 fetch error for ${c.req.param("*")}:`, err);
+    console.warn("Asset not found:", reqPath);
 
-    // SPA fallback for HTML routes only
-    const reqPath = c.req.param("*") || "index.html";
-    if (!reqPath.includes(".") || reqPath.endsWith(".html")) {
+    // SPA fallback ONLY for routes without extensions (like /about)
+    if (!reqPath.includes(".")) {
       try {
-        const host = c.req.header("host") || "";
-        const project = host.split(".")[0];
-
         const fallback = await s3.send(
           new GetObjectCommand({
             Bucket: "dist",
@@ -83,11 +72,11 @@ app.get("/*", async (c) => {
           status: 200,
         });
       } catch (_) {
-        console.error("SPA fallback failed:", _);
+        return new Response("Not Found", { status: 404 });
       }
     }
 
-    // File not found
+    // If it's a file (like .js, .css) → just return 404
     return new Response("Not Found", { status: 404 });
   }
 });
