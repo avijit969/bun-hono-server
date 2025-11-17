@@ -3,15 +3,13 @@ import { Hono } from "hono";
 
 const app = new Hono();
 
-// Initialize R2 client
 const s3 = new S3Client({
   region: "auto",
   forcePathStyle: true,
-  endpoint: "https://5d705b266cd8845b315556f319e99893.r2.cloudflarestorage.com",
+  endpoint: process.env.R2_ENDPOINT || "",
   credentials: {
-    accessKeyId: "2e3b18725fda11bcd53ea09e80f78819",
-    secretAccessKey:
-      "993ef055b6f6ec5da099419e9b4dbd51cb0704b81cd0523b254c0f1eadb767db",
+    accessKeyId: process.env.R2_ACCESS_KEY_ID || "",
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
   },
 });
 
